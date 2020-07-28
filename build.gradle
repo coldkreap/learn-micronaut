@@ -1,6 +1,10 @@
 plugins {
-    id "com.github.johnrengelman.shadow" version "6.0.0"
-    id "application"
+    // Although gradle can make a "fat" JAR without a plugin, this plugin is so much simpler.
+    id 'com.github.johnrengelman.shadow' version '6.0.0'
+
+    // This plugin makes it possible to package and run the application from gradle.
+    // Adds tasks like run, distZip, distTar, etc.
+    id 'application'
 }
 
 repositories {
@@ -13,36 +17,44 @@ java {
     targetCompatibility = JavaVersion.toVersion('11')
 }
 
+// This property is needed for both the application and shadow plugins, and must be set in this file or it may cause problems with sub-projects.
+mainClassName = 'com.coldkreap.Application'
+
 configurations {
     // for dependencies that are needed for development only
     developmentOnly
 }
 
 dependencies {
-    annotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    annotationProcessor("io.micronaut:micronaut-inject-java")
-    annotationProcessor("io.micronaut:micronaut-validation")
+    // The 'platform' is how you do a BOM (Bill of Materials) in gradle. It allows us to not have to specify
+    // the version on dependencies that are part of the BOM, as they will default to the version recommended by the BOM.
+    // This is good, because then we don't have to worry if a common dependency is compatible.
+    annotationProcessor platform("io.micronaut:micronaut-bom:$micronautVersion")
+    annotationProcessor 'io.micronaut:micronaut-inject-java'
+    annotationProcessor 'io.micronaut:micronaut-validation'
 
-    implementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    implementation("io.micronaut:micronaut-inject")
-    implementation("io.micronaut:micronaut-validation")
-    implementation("io.micronaut:micronaut-runtime")
-    implementation("io.micronaut:micronaut-http-server-netty")
-    implementation("io.micronaut:micronaut-http-client")
-    implementation("javax.annotation:javax.annotation-api")
-    
-    developmentOnly("io.micronaut:micronaut-runtime-osx:$micronautVersion")
-    
-    runtimeOnly("ch.qos.logback:logback-classic")
-    
-    testAnnotationProcessor(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    testAnnotationProcessor("io.micronaut:micronaut-inject-java")
-    
-    testImplementation(platform("io.micronaut:micronaut-bom:$micronautVersion"))
-    testImplementation("org.junit.jupiter:junit-jupiter-api")
-    testImplementation("io.micronaut.test:micronaut-test-junit5")
-    
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    // It seems, we need a BOM for the annotationProcessor as well as implementation (similarly for test).
+    implementation platform("io.micronaut:micronaut-bom:$micronautVersion")
+    implementation 'io.micronaut:micronaut-inject'
+    implementation 'io.micronaut:micronaut-validation'
+    implementation 'io.micronaut:micronaut-runtime'
+    implementation 'io.micronaut:micronaut-http-server-netty'
+    implementation 'io.micronaut:micronaut-http-client'
+    implementation 'javax.annotation:javax.annotation-api'
+
+    // TODO: What is this and is it needed? If not, I think I can remove the configuration as well. Simplify.
+    developmentOnly "io.micronaut:micronaut-runtime-osx:$micronautVersion"
+
+    runtimeOnly('ch.qos.logback:logback-classic')
+
+    testAnnotationProcessor platform("io.micronaut:micronaut-bom:$micronautVersion")
+    testAnnotationProcessor 'io.micronaut:micronaut-inject-java'
+
+    testImplementation platform("io.micronaut:micronaut-bom:$micronautVersion")
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'io.micronaut.test:micronaut-test-junit5'
+
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }
 
 test.classpath += configurations.developmentOnly
@@ -53,11 +65,13 @@ test {
 }
 
 shadowJar {
+    // This will merge any META-INF/services files together into one.
+    // TODO: Remove if not needed.
     mergeServiceFiles()
 }
 
 tasks.withType(JavaCompile) {
-    options.encoding = "UTF-8"
+    options.encoding = 'UTF-8'
     options.compilerArgs.addAll([
         '-parameters',
         // enables incremental compilation
@@ -75,7 +89,7 @@ tasks.withType(JavaExec) {
         systemProperties(
             'micronaut.io.watch.restart':'true',
             'micronaut.io.watch.enabled':'true',
-            "micronaut.io.watch.paths":"src/main"
+            'micronaut.io.watch.paths':'src/main'
         )
     }
 }
